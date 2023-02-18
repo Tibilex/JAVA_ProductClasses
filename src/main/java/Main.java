@@ -2,10 +2,11 @@ import Models.Category;
 import Models.Manufacturer;
 import Models.Product;
 
+import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.ArrayList;
-
+import org.json.JSONObject;
 
 public class Main {
     static Scanner console = new Scanner(System.in);
@@ -18,52 +19,58 @@ public class Main {
     }
 
     public static void menu(){
-        String menuChoice;
+        int menuChoice;
         while (true){
             try{
                 System.out.print("""
-                        \t\t  Menu
+                         Menu
                         |===========================================================================|
                         | 1 = Show all Products\t\t\t\t\t\t\t\t\t\t\t\t\t\t|
                         | 2 = Show All Categories\t\t\t\t\t\t\t\t\t\t\t\t\t|
                         | 3 = Show by 1 manufacturer\t\t\t\t\t\t\t\t\t\t\t\t|
-                        | 4 = Show below the average price among all categories\t\t\t\t\t\t|
-                        | 5 = Show below the average price among the most NOT popular categories    |
-                        | 6 = Show least popular manufacturer in the most popular category\t\t\t|
-                        | 7 = Show weighing up to 1kg (random only)\t\t\t\t\t\t\t\t\t|
-                        | 8 = price from $1 to $5 and weighing up to 500 grams\t\t\t\t\t\t|
+                        | 4 = show all under 100$\t\t\t\t\t\t\t\t\t\t\t\t\t|
+                        | 5 = Show below the average price among all categories\t\t\t\t\t\t|
+                        | 6 = Show below the average price among the most NOT popular categories    |
+                        | 7 = Show least popular manufacturer in the most popular category\t\t\t|
+                        | 8 = Show weighing up to 1kg (random only)\t\t\t\t\t\t\t\t\t|
+                        | 9 = price from $1 to $5 and weighing up to 500 grams\t\t\t\t\t\t|
                         | 0 = Exit:\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t|
                         |===========================================================================|
                         """);
-                menuChoice = console.nextLine();
+                menuChoice = console.nextInt();
 
                 switch (menuChoice){
-                    case "1":
+                    case 1:
                         System.out.println("All Products");
                         showAllProducts();
                         break;
-                    case "2":
+                    case 2:
+                        System.out.println("All Categories");
+                        showAllCategories();
+                        break;
+                    case 3:
+                        _manufacturers.forEach(m->System.out.println(m.getId() + " - " + m.getName()));
+                        System.out.println("select number manufacturer:");
+                        menuChoice = console.nextInt();
+                        showByOneManufacturer(menuChoice).forEach(product -> System.out.println(product.toString()));
+                        break;
+                    case 4:
+                        System.out.println("Products below 100$");
+                        showBelow100().forEach(product -> System.out.println(product.toString()));
+                        break;
+                    case 5:
 
                         break;
-                    case "3":
+                    case 6:
 
                         break;
-                    case "4":
+                    case 7:
 
                         break;
-                    case "5":
+                    case 8:
 
                         break;
-                    case "6":
-
-                        break;
-                    case "7":
-
-                        break;
-                    case "8":
-
-                        break;
-                    case "0": {return;}
+                    case 0: {return;}
                     default : System.out.println("\n\tInvalid Input !");
                 }
             }
@@ -77,6 +84,17 @@ public class Main {
         for (Product item: _products) {
             System.out.println(item.toString());
         }
+    }
+    public static void showAllCategories(){
+        for (Category item: _categories) {
+            System.out.println(item.toString());
+        }
+    }
+    public static List<Product> showByOneManufacturer(int id){
+        return  _products.stream().filter(p->p.getManufacturer().getId() == id).toList();
+    }
+    public static List<Product> showBelow100(){
+        return _products.stream().filter(p->p.getPrice() < 100).toList();
     }
     public static Category selectCategory(int id){
         return _categories.stream().filter(category -> category.getId() == id).findFirst().orElse(null);

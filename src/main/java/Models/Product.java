@@ -20,6 +20,10 @@ public class Product {
         this._salesCount = salesCount;
     }
 
+    public double getPrice() {
+        return _price;
+    }
+
     public Category getCategory() {
         return _category;
     }
