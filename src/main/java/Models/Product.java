@@ -24,6 +24,14 @@ public class Product {
         return _price;
     }
 
+    public int getSalesCount() {
+        return _salesCount;
+    }
+
+    public double getWeight() {
+        return _weight;
+    }
+
     public Category getCategory() {
         return _category;
     }

@@ -2,10 +2,11 @@ import Models.Category;
 import Models.Manufacturer;
 import Models.Product;
 
-import java.util.List;
-import java.util.Random;
-import java.util.Scanner;
-import java.util.ArrayList;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.*;
+
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class Main {
@@ -34,7 +35,7 @@ public class Main {
                         | 7 = Show least popular manufacturer in the most popular category\t\t\t|
                         | 8 = Show weighing up to 1kg (random only)\t\t\t\t\t\t\t\t\t|
                         | 9 = price from $1 to $5 and weighing up to 500 grams\t\t\t\t\t\t|
-                        | 0 = Exit:\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t|
+                        | 0 = Exit and save information to JSON files:\t\t\t\t\t\t\t\t|
                         |===========================================================================|
                         """);
                 menuChoice = console.nextInt();
@@ -42,11 +43,11 @@ public class Main {
                 switch (menuChoice){
                     case 1:
                         System.out.println("All Products");
-                        showAllProducts();
+                        showAllProducts().forEach(product -> System.out.println(product.toString()));
                         break;
                     case 2:
                         System.out.println("All Categories");
-                        showAllCategories();
+                        showAllCategories().forEach(product -> System.out.println(product.toString()));
                         break;
                     case 3:
                         _manufacturers.forEach(m->System.out.println(m.getId() + " - " + m.getName()));
@@ -59,18 +60,30 @@ public class Main {
                         showBelow100().forEach(product -> System.out.println(product.toString()));
                         break;
                     case 5:
-
+                        System.out.println("Products below the average price among all categories");
+                        averagePriceAmongAllCategories().forEach(product -> System.out.println(product.toString()));
                         break;
                     case 6:
-
+                        System.out.println("Products below the average price among the most NOT popular categories");
+                        averagePriceAmongNotPopularCategories().forEach(product -> System.out.println(product.toString()));
                         break;
                     case 7:
 
                         break;
                     case 8:
-
+                        System.out.println("Product weighing up to 1kg (random only)");
+                        System.out.println(RandomWeightTo1000());
                         break;
-                    case 0: {return;}
+                    case 9:
+                        System.out.println("Product price from $1 to $5 and weighing up to 500 grams");
+                        priceFrom5AndWeight500().forEach(product -> System.out.println(product.toString()));
+                        break;
+                    case 0:
+                    {
+                        WriteToFile();
+                        saveResultToJSON();
+                        return;
+                    }
                     default : System.out.println("\n\tInvalid Input !");
                 }
             }
@@ -80,21 +93,46 @@ public class Main {
         }
     }
 
-    public static void showAllProducts(){
-        for (Product item: _products) {
-            System.out.println(item.toString());
-        }
+    public static List<Product> showAllProducts(){
+        return _products;
     }
-    public static void showAllCategories(){
-        for (Category item: _categories) {
-            System.out.println(item.toString());
-        }
+    public static List<Category> showAllCategories(){
+        return _categories;
     }
     public static List<Product> showByOneManufacturer(int id){
         return  _products.stream().filter(p->p.getManufacturer().getId() == id).toList();
     }
     public static List<Product> showBelow100(){
         return _products.stream().filter(p->p.getPrice() < 100).toList();
+    }
+    public static List<Product> averagePriceAmongAllCategories(){
+        double average = _products.stream().map(Product::getPrice).mapToDouble(a -> a).average().orElse(0.0);
+        System.out.println("average cost: " + roundDouble(average));
+        return _products.stream().filter(p->p.getPrice() < average).toList();
+    }
+    public static List<Product> averagePriceAmongNotPopularCategories(){
+        int[] sums = new int[3];
+        sums[0] = showByOneManufacturer(0).stream().map(Product::getSalesCount).mapToInt(a -> a).sum();
+        sums[1] = showByOneManufacturer(1).stream().map(Product::getSalesCount).mapToInt(a -> a).sum();
+        sums[2] = showByOneManufacturer(2).stream().map(Product::getSalesCount).mapToInt(a -> a).sum();
+        int index = 0;
+        for (int i = 1; i < sums.length; i++){
+            if (sums[i] < sums[index])
+            {
+                index = i;
+            }
+        }
+        double average = showByOneManufacturer(index).stream().map(Product::getPrice).mapToDouble(a -> a).average().orElse(0.0);
+        System.out.println("average cost: " + roundDouble(average));
+        return showByOneManufacturer(index).stream().filter(p->p.getPrice() < average).toList();
+    }
+    public static Product RandomWeightTo1000(){
+        List<Product> list = _products.stream().filter(p->p.getWeight() < 1000).toList();
+        Random random = new Random();
+        return list.get(random.nextInt(list.size()));
+    }
+    public static List<Product> priceFrom5AndWeight500(){
+        return _products.stream().filter(p->p.getPrice() > 1 && p.getPrice() < 5 && p.getWeight() < 500).toList();
     }
     public static Category selectCategory(int id){
         return _categories.stream().filter(category -> category.getId() == id).findFirst().orElse(null);
@@ -133,5 +171,41 @@ public class Main {
         _products.add(new Product(12, "Almond", roundDouble(random.nextDouble(1200)), roundDouble(random.nextDouble(200)), selectCategory(2), selectManufacturer(1), random.nextInt(1000)));
         _products.add(new Product(13, "Coconut", roundDouble(random.nextDouble(1200)), roundDouble(random.nextDouble(200)), selectCategory(2), selectManufacturer(2), random.nextInt(1000)));
         _products.add(new Product(14, "Hazel", roundDouble(random.nextDouble(1200)), roundDouble(random.nextDouble(200)), selectCategory(2), selectManufacturer(0), random.nextInt(1000)));
+    }
+
+    public static void saveResultToJSON(){
+        JSONArray json = new JSONArray();
+
+        json.putAll(showAllProducts());
+        json.putAll(showAllCategories());
+        json.putAll(showByOneManufacturer(0));
+        json.putAll(showBelow100());
+        json.putAll(averagePriceAmongAllCategories());
+        json.putAll(averagePriceAmongNotPopularCategories());
+        //json.putAll(Task7());
+        Product[] products = { RandomWeightTo1000() };
+        json.putAll(products);
+        json.putAll(priceFrom5AndWeight500());
+        try(FileWriter writer = new FileWriter("res.json", false))
+        {
+            writer.write(json.toString(4));
+            writer.flush();
+        }
+        catch(Exception ex){
+            System.out.println(ex.getMessage());
+        }
+    }
+    public static void WriteToFile(){
+        JSONArray json = new JSONArray();
+
+        json.putAll(showAllProducts());
+        try(FileWriter writer = new FileWriter("mydb.json", false))
+        {
+            writer.write(json.toString(4));
+            writer.flush();
+        }
+        catch(IOException ex){
+            System.out.println(ex.getMessage());
+        }
     }
 }
