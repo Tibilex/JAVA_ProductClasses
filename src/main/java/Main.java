@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.util.*;
 
 import org.json.JSONArray;
-import org.json.JSONObject;
 
 public class Main {
     static Scanner console = new Scanner(System.in);
@@ -68,7 +67,8 @@ public class Main {
                         averagePriceAmongNotPopularCategories().forEach(product -> System.out.println(product.toString()));
                         break;
                     case 7:
-
+                        System.out.println("Products least popular manufacturer in the most popular category");
+                        notPopularManufacturerInMostPopularCategory().forEach(product -> System.out.println(product.toString()));
                         break;
                     case 8:
                         System.out.println("Product weighing up to 1kg (random only)");
@@ -93,6 +93,8 @@ public class Main {
         }
     }
 
+    // TASK METHODS
+
     public static List<Product> showAllProducts(){
         return _products;
     }
@@ -102,6 +104,7 @@ public class Main {
     public static List<Product> showByOneManufacturer(int id){
         return  _products.stream().filter(p->p.getManufacturer().getId() == id).toList();
     }
+
     public static List<Product> showBelow100(){
         return _products.stream().filter(p->p.getPrice() < 100).toList();
     }
@@ -112,9 +115,9 @@ public class Main {
     }
     public static List<Product> averagePriceAmongNotPopularCategories(){
         int[] sums = new int[3];
-        sums[0] = showByOneManufacturer(0).stream().map(Product::getSalesCount).mapToInt(a -> a).sum();
-        sums[1] = showByOneManufacturer(1).stream().map(Product::getSalesCount).mapToInt(a -> a).sum();
-        sums[2] = showByOneManufacturer(2).stream().map(Product::getSalesCount).mapToInt(a -> a).sum();
+        sums[0] = selectOneCategory(0).stream().map(Product::getSalesCount).mapToInt(a -> a).sum();
+        sums[1] = selectOneCategory(1).stream().map(Product::getSalesCount).mapToInt(a -> a).sum();
+        sums[2] = selectOneCategory(2).stream().map(Product::getSalesCount).mapToInt(a -> a).sum();
         int index = 0;
         for (int i = 1; i < sums.length; i++){
             if (sums[i] < sums[index])
@@ -122,10 +125,38 @@ public class Main {
                 index = i;
             }
         }
-        double average = showByOneManufacturer(index).stream().map(Product::getPrice).mapToDouble(a -> a).average().orElse(0.0);
+        double average = selectOneCategory(index).stream().map(Product::getPrice).mapToDouble(a -> a).average().orElse(0.0);
         System.out.println("average cost: " + roundDouble(average));
-        return showByOneManufacturer(index).stream().filter(p->p.getPrice() < average).toList();
+        return selectOneCategory(index).stream().filter(p->p.getPrice() < average).toList();
     }
+    public static List<Product> notPopularManufacturerInMostPopularCategory(){
+        int[] sumManufacturers = new int[3];
+        sumManufacturers[0] = selectOneCategory(0).stream().map(Product::getSalesCount).mapToInt(a -> a).sum();
+        sumManufacturers[1] = selectOneCategory(1).stream().map(Product::getSalesCount).mapToInt(a -> a).sum();
+        sumManufacturers[2] = selectOneCategory(2).stream().map(Product::getSalesCount).mapToInt(a -> a).sum();
+        int indexMax = 0;
+        int indexMin = 0;
+        for (int i = 1; i < sumManufacturers.length; i++) {
+            if (sumManufacturers[i] > sumManufacturers[indexMax]) {
+                indexMax = i;
+            }
+        }
+
+        List<Product> topCategoryList = showByOneManufacturer(indexMax);
+        int[] sumCategories = new int[3];
+        for (int i = 1; i < sumCategories.length; i++) {
+            if (sumCategories[i] < sumCategories[indexMin])
+            {
+                indexMin = i;
+            }
+        }
+        sumCategories[0] = selectOneManufacturer(0, topCategoryList).stream().map(Product::getSalesCount).mapToInt(a -> a).sum();
+        sumCategories[1] = selectOneManufacturer(1, topCategoryList).stream().map(Product::getSalesCount).mapToInt(a -> a).sum();
+        sumCategories[2] = selectOneManufacturer(2, topCategoryList).stream().map(Product::getSalesCount).mapToInt(a -> a).sum();
+
+        return selectOneManufacturer(indexMin, topCategoryList);
+    }
+
     public static Product RandomWeightTo1000(){
         List<Product> list = _products.stream().filter(p->p.getWeight() < 1000).toList();
         Random random = new Random();
@@ -134,17 +165,26 @@ public class Main {
     public static List<Product> priceFrom5AndWeight500(){
         return _products.stream().filter(p->p.getPrice() > 1 && p.getPrice() < 5 && p.getWeight() < 500).toList();
     }
+
+    // Technical Methods
     public static Category selectCategory(int id){
         return _categories.stream().filter(category -> category.getId() == id).findFirst().orElse(null);
     }
     public static Manufacturer selectManufacturer(int id){
         return _manufacturers.stream().filter(manufacturer -> manufacturer.getId() == id).findFirst().orElse(null);
     }
+    public static List<Product> selectOneCategory(int id){
+        return  _products.stream().filter(p->p.getCategory().getId() == id).toList();
+    }
+    public static List<Product> selectOneManufacturer(int id, List<Product> list){
+        return  list.stream().filter(p->p.getManufacturer().getId() == id).toList();
+    }
     public static Double roundDouble(double value){
         value = Math.round(value * 100);
         value = value / 100;
         return value;
     }
+
     public static void generateProducts(){
         _categories.add(new Category(0, "Fruit"));
         _categories.add(new Category(1, "Vegetable"));
@@ -179,10 +219,12 @@ public class Main {
         json.putAll(showAllProducts());
         json.putAll(showAllCategories());
         json.putAll(showByOneManufacturer(0));
+        json.putAll(showByOneManufacturer(1));
+        json.putAll(showByOneManufacturer(2));
         json.putAll(showBelow100());
         json.putAll(averagePriceAmongAllCategories());
         json.putAll(averagePriceAmongNotPopularCategories());
-        //json.putAll(Task7());
+        json.putAll(notPopularManufacturerInMostPopularCategory());
         Product[] products = { RandomWeightTo1000() };
         json.putAll(products);
         json.putAll(priceFrom5AndWeight500());
