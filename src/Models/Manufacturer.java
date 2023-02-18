@@ -9,11 +9,16 @@ public class Manufacturer {
         this._name = name;
     }
 
-    public int get_id() {
+    public int getId() {
         return _id;
     }
 
-    public String get_name() {
+    public String getName() {
         return _name;
+    }
+
+    @Override
+    public String toString(){
+        return "{'name':" + _name +"}";
     }
 }

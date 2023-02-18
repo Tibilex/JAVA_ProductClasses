@@ -20,11 +20,11 @@ public class Product {
         this._salesCount = salesCount;
     }
 
-    public Category get_category() {
+    public Category getCategory() {
         return _category;
     }
 
-    public Manufacturer get_manufacturer() {
+    public Manufacturer getManufacturer() {
         return _manufacturer;
     }
 
